@@ -71,10 +71,19 @@ def main():
 
     for assay in assays:
         logger.info("Processing assay {}".format(assay))
-    
-        # Annotate files in assay sub-folders
+
         folder_obj = syn.get(assay.id)
         assert folder_obj.name == assay.name, 'Name of folder and supplied name are different: {} and {}'.format(folder_obj.name, assay.name)
+
+        metadata_folder_obj = syn.get(assay.metadata_folder)
+        assert metadata_folder_obj.name == "Metadata", "Not a metadata folder."
+        assert metadata_folder_obj.parentId == assay.id, "The folder {} isn't a child of the assay folder.".format(metadata_folder_obj)
+
+        data_folder_obj = syn.get(assay.data_folder)
+        assert data_folder_obj.name == "Data", "{} is not a data folder.".format(data_folder_obj)
+        assert data_folder_obj.parentId == assay.id, "The folder {} isn't a child of the assay folder.".format(data_folder_obj)
+
+        # Annotate files in assay sub-folders
         _ = annotations_for_folder(syn, assay.id, file_view_id, 'assay', assay.name, 
                                    dry_run=args.dry_run)
         _ = annotations_for_folder(syn, assay.id, file_view_id, 'CellLine', 'MCF10A',
@@ -83,14 +92,10 @@ def main():
                                    dry_run=args.dry_run)
 
         # Annotate data in assay metadata sub-folder
-        folder_obj = syn.get(assay.metadata_folder)
-        assert folder_obj.name == "Metadata", "Not a metadata folder."
         _ = annotations_for_folder(syn, assay.metadata_folder, file_view_id, 
                                 'DataType', 'Metadata', dry_run=args.dry_run)
 
         # Set level 0 to files in data folders
-        folder_obj = syn.get(assay.data_folder)
-        assert folder_obj.name == "Data", "Not a data folder."
         _ = level_zero_folder(syn, folder_id=assay.data_folder, tbl="syn18486863",
                                 dry_run=args.dry_run)
 
