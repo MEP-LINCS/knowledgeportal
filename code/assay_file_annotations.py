@@ -9,6 +9,9 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 def annotations_for_folder(syn, folder_id, tbl, key, value, dry_run=False):
+    """Walk a container and find all folders and apply key=value 
+       annotation to all files in them.
+    """
     w = synapseutils.walk(syn, folder_id)
     folders = set([x[0][1].lstrip('syn') for x in w])
     q = 'SELECT {} FROM {} WHERE parentId IN ({}) AND {} IS NULL'.format(key, tbl, ",".join(folders), key)
