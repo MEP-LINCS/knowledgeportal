@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://example.com/sample_annotations_file_schema.json",
+  "title": "LINCS MCF10A MDD Sample Annotation Schema",
+  "description": "Annotation Schema for MCF10A Molecular Deep Dive Samples",
+  "type": "array",
+  "items": { "$ref": "sample_annotation.json#/definitions/sample_annotation"}
+}

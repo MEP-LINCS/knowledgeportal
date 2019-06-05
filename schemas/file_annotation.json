@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://example.com/file_annotation.json",
+  "title": "LINCS MCF10A MDD File Annotation Schema",
+  "description": "Annotation Schema for MCF10A Molecular Deep Dive Files",
+  "definitions": {
+    "file_annotation": {
+      "$id": "#file_annotation",
+      "type": "object",
+      "properties": {
+        "assay": {
+          "description": "Assay",
+          "type": "string",
+          "enum": ["ATACseq", "Cyclic Immunofluorescence", "Global Chromatin Profiling",
+                   "Immunofluorescence", "L1000", "Reverse Phase Protein Array", "rnaSeq"]
+        },
+        "Level": {
+          "description": "Level",
+          "type": ["number", "null"],
+          "enum": [0, 1, 2, 3, 4]
+        },
+        "CellLine": {
+          "description": "Identifying string linked to a particular cell line",
+          "type": ["string", "null"],
+          "enum": [
+            "MCF10A"
+          ]
+        },
+        "DataType": {
+          "description": "The type of data.",
+          "type": ["string", "null"],
+          "enum": ["Metadata"]
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}
