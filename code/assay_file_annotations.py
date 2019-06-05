@@ -11,11 +11,14 @@ logger.setLevel(logging.INFO)
 def annotations_for_folder(syn, folder_id, tbl, key, value, dry_run=False):
     w = synapseutils.walk(syn, folder_id)
     folders = set([x[0][1].lstrip('syn') for x in w])
-    q = 'SELECT {} FROM {} WHERE parentId IN ({})'.format(key, tbl, ",".join(folders))
+    q = 'SELECT {} FROM {} WHERE parentId IN ({}) AND {} IS NULL'.format(key, tbl, ",".join(folders), key)
     logger.debug(q)
     res = syn.tableQuery(q).asDataFrame()
+    logger.info("{} rows to change for key {}.".format(res.shape[0], key))
+
     res[key] = value
-    if not dry_run:
+
+    if not dry_run and not res.empty:
         new_tbl = syn.store(synapseclient.Table(tbl, res))
         return(new_tbl)
     else:
@@ -23,7 +26,7 @@ def annotations_for_folder(syn, folder_id, tbl, key, value, dry_run=False):
 
 def level_zero_folder(syn, folder_id, tbl, dry_run=False):
     """Assume everything in a Data folder that doesn't have a name like
-    '.*Level[1-4]\\..*' is level 0.
+    'MDD_Level.\\..*' is level 0.
     """
     w = synapseutils.walk(syn, folder_id)
     folders = set([x[0][1].lstrip('syn') for x in w])
@@ -32,8 +35,8 @@ def level_zero_folder(syn, folder_id, tbl, dry_run=False):
     logger.debug(q)
     res = syn.tableQuery(q).asDataFrame()
     res['Level'] = 0
-
-    if not dry_run:
+    logger.info("{} rows to change for level 0.".format(res.shape[0]))
+    if not dry_run  and not res.empty:
         new_tbl = syn.store(synapseclient.Table(tbl, res))
         return(new_tbl)
     else:
