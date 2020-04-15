@@ -6,7 +6,17 @@ import synapseutils
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
+
+def store_table_and_reindex(syn, tbl, res):
+    """Store a Synapse table and then force it to be indexed.
+
+    """
+    new_tbl = syn.store(synapseclient.Table(tbl, res))
+    logger.debug("Stored table, forcing reindex.")
+    _ = syn.tableQuery(f'SELECT id FROM {tbl} LIMIT 1')
+    return(new_tbl)
+
 
 def annotations_for_folder(syn, folder_id, tbl, key, value, dry_run=False):
     """Walk a container and find all folders and apply key=value 
@@ -22,7 +32,7 @@ def annotations_for_folder(syn, folder_id, tbl, key, value, dry_run=False):
     res[key] = value
 
     if not dry_run and not res.empty:
-        new_tbl = syn.store(synapseclient.Table(tbl, res))
+        new_tbl = store_table_and_reindex(syn, tbl, res)
         return(new_tbl)
     else:
         return(res)
@@ -40,8 +50,8 @@ def level_zero_folder(syn, folder_id, tbl, dry_run=False):
     res['Level'] = 0
     logger.info("{} rows to change for level 0.".format(res.shape[0]))
     if not dry_run  and not res.empty:
-        new_tbl = syn.store(synapseclient.Table(tbl, res))
-        return(new_tbl)
+        new_tbl = store_table_and_reindex(syn, tbl, res)
+              return(new_tbl)
     else:
         return(res)
 
@@ -55,6 +65,7 @@ def main():
 
     args = parser.parse_args()
 
+    synapseclient.utils.printTransferProgress = lambda *a, **k: None
     syn = synapseclient.login(silent=True)
 
     file_view_id = 'syn18486863'
