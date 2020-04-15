@@ -1,0 +1,148 @@
+---
+title: "MEP-LINCS Annual Report"
+author: "Kenneth Daily"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE)
+
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(viridis)
+library(synapser)
+library(synapseusagereports)
+
+keep_cols <- c('userid','id','DATE','TIMESTAMP',
+               'NODE_TYPE','NAME','recordType','date','userId',
+               'dateGrouping','monthYear')
+
+queryDataNew1 <- read_csv("/home/kdaily/Projects/LINCS/annualreport/syn2862345_report_2018-10-23.csv") %>% select(one_of(keep_cols))
+
+queryDataNew2 <- read_csv("/home/kdaily/Projects/LINCS/annualreport/syn2862345_report_2018-04-04.csv") %>% select(one_of(keep_cols))
+
+queryDataNew3 <- read_csv("/home/kdaily/Projects/LINCS/annualreport/syn2862345-20180701-20190408.csv") %>% 
+  mutate(userid=userId) %>% 
+  select(one_of(keep_cols)) 
+
+queryDataNew4 <- read_csv("/home/kdaily/Projects/LINCS/annualreport/syn2862345-20181001-20190930.csv")%>% 
+  mutate(userid=userId) %>% 
+  select(one_of(keep_cols)) 
+
+
+queryDataNew <- rbind(queryDataNew1, queryDataNew2, queryDataNew3, queryDataNew4)
+
+queryDataNew <- queryDataNew %>% 
+  mutate(userId=as.character(userId),
+         quarter=lubridate::quarter(DATE),
+         year=lubridate::year(DATE),
+         quarteryear=glue::glue("{year} Q{quarter}"))
+
+queryDataOld <- read_csv("/home/kdaily/Projects/LINCS/annualreport/syn2862345_20170407_26months-simplified.csv") %>% 
+  select(one_of(keep_cols)) %>% 
+  mutate(userId=as.character(userId),
+         quarter=lubridate::quarter(DATE),
+         year=lubridate::year(DATE),
+         quarteryear=glue::glue("{year} Q{quarter}"))
+
+query_data <- rbind(queryDataNew, queryDataOld) %>% 
+  distinct()
+
+synLogin()
+projectId <- '2862345'
+team_order <- c(3323597, 3330234, 3332397, 273957)
+user_list <- processTeamMemberList(team_order)
+
+all_users <- getQueryUserProfiles(query_data, TRUE, user_list)
+
+query_data <- query_data %>%
+  left_join(., all_users) 
+
+```
+
+```{r}
+byquarter <- query_data %>% 
+  dplyr::filter(!(teamName %in% c("LINCS OHSU", "Sage Bionetworks", "HMS-LINCS"))) %>% 
+  group_by(quarteryear, recordType, teamName) %>% 
+  summarize(`Users`=n_distinct(userid), n=n()) %>% 
+  arrange(recordType, quarteryear) %>% 
+  ungroup()
+```
+### NEW Page views per quarter of the main wiki page
+
+Data from Google Analytics of page views of the main MEP-LINCS Synapse Project wiki page (and any subpages). We can only see unique users determined by Google, not presence in specific Synapse teams.
+
+```{r}
+pageview_ga <- readr::read_csv("/home/kdaily/Projects/LINCS/annualreport/Analytics Synapse MEP-LINCS 20161001-20190930.csv", comment = "#") %>% 
+  mutate(date = lubridate::parse_date_time(`Month of Year`, "ym"),
+         quarter = lubridate::quarter(date),
+         year = lubridate::year(date),
+         Quarter = glue::glue("{year} Q{quarter}")
+  ) %>% 
+  group_by(Quarter) %>% 
+  summarize(`Users`=sum(Users), Count=sum(Pageviews)) %>% 
+  arrange(Quarter) %>% 
+  ungroup()
+
+```
+
+
+```{r}
+p <- ggplot(pageview_ga, aes(x=Quarter, y=Count))
+p <- p + geom_col()
+# p <- p + viridis::scale_fill_viridis(discrete=TRUE, drop = FALSE)
+p <- p + xlab("")
+p <- p + theme_bw()
+p <- p + theme(axis.text.x = element_text(angle=270, vjust=0.5),
+               legend.position="top")
+p
+```
+
+### Downloads per quarter
+
+```{r}
+byquarter %>% filter(recordType=='download') %>% 
+  select(`Quarter`=quarteryear, teamName, n) %>% 
+  tidyr::spread(teamName, n) %>% 
+  DT::datatable()
+```
+
+```{r}
+pdatadownloads <- byquarter %>% 
+  filter(recordType=='download') %>% 
+  mutate(teamName=factor(teamName, 
+                         levels = c("Anonymous", 
+                                    "LINCS DCIC",
+                                    "Registered Synapse User"), 
+                         ordered = TRUE)) %>% 
+    rename(Group=teamName, Quarter=quarteryear, Count=n)
+
+
+p <- ggplot(pdatadownloads, aes(x=Quarter, y=Count))
+p <- p + geom_col(aes(fill=Group))
+p <- p + viridis::scale_fill_viridis(discrete=TRUE, drop = FALSE,
+                                     breaks=c("LINCS DCIC", 
+                                              "Registered Synapse User"))
+p <- p + xlab("")
+p <- p + theme_bw()
+p <- p + theme(axis.text.x = element_text(angle=270, vjust=0.5),
+                              legend.position="top")
+p
+```
+
+### Unique users (page views and downloads) per quarter
+```{r}
+query_data %>% 
+  filter(teamName != "Anonymous") %>% 
+  group_by(quarteryear, teamName) %>% 
+  summarize(`Users`=n_distinct(userid), n=n()) %>% 
+  arrange(quarteryear) %>% 
+  ungroup() %>% 
+  select(`Quarter`=quarteryear, teamName, `Users`) %>% 
+  tidyr::spread(teamName, `Users`) %>% 
+  DT::datatable(options=list(pageLength=50, lengthChange=FALSE))
+```
+
+
