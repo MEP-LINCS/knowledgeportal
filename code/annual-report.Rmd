@@ -19,15 +19,15 @@ keep_cols <- c('userid','id','DATE','TIMESTAMP',
                'NODE_TYPE','NAME','recordType','date','userId',
                'dateGrouping','monthYear')
 
-queryDataNew1 <- read_csv("/home/kdaily/Projects/LINCS/annualreport/syn2862345_report_2018-10-23.csv") %>% select(one_of(keep_cols))
+queryDataNew1 <- read_csv("/tmp/syn2862345_report_2018-10-23.csv") %>% select(one_of(keep_cols))
 
-queryDataNew2 <- read_csv("/home/kdaily/Projects/LINCS/annualreport/syn2862345_report_2018-04-04.csv") %>% select(one_of(keep_cols))
+queryDataNew2 <- read_csv("/tmp/syn2862345_report_2018-04-04.csv") %>% select(one_of(keep_cols))
 
-queryDataNew3 <- read_csv("/home/kdaily/Projects/LINCS/annualreport/syn2862345-20180701-20190408.csv") %>% 
+queryDataNew3 <- read_csv("/tmp/syn2862345-20180701-20190408.csv") %>% 
   mutate(userid=userId) %>% 
   select(one_of(keep_cols)) 
 
-queryDataNew4 <- read_csv("/home/kdaily/Projects/LINCS/annualreport/syn2862345-20181001-20190930.csv")%>% 
+queryDataNew4 <- read_csv("/tmp/syn2862345-20181001-20190930.csv")%>% 
   mutate(userid=userId) %>% 
   select(one_of(keep_cols)) 
 
@@ -40,7 +40,7 @@ queryDataNew <- queryDataNew %>%
          year=lubridate::year(DATE),
          quarteryear=glue::glue("{year} Q{quarter}"))
 
-queryDataOld <- read_csv("/home/kdaily/Projects/LINCS/annualreport/syn2862345_20170407_26months-simplified.csv") %>% 
+queryDataOld <- read_csv("/tmp/syn2862345_20170407_26months-simplified.csv") %>% 
   select(one_of(keep_cols)) %>% 
   mutate(userId=as.character(userId),
          quarter=lubridate::quarter(DATE),
@@ -75,7 +75,7 @@ byquarter <- query_data %>%
 Data from Google Analytics of page views of the main MEP-LINCS Synapse Project wiki page (and any subpages). We can only see unique users determined by Google, not presence in specific Synapse teams.
 
 ```{r}
-pageview_ga <- readr::read_csv("/home/kdaily/Projects/LINCS/annualreport/Analytics Synapse MEP-LINCS 20161001-20190930.csv", comment = "#") %>% 
+pageview_ga <- readr::read_csv("/tmp/Analytics Synapse MEP-LINCS 20161001-20190930.csv", comment = "#") %>% 
   mutate(date = lubridate::parse_date_time(`Month of Year`, "ym"),
          quarter = lubridate::quarter(date),
          year = lubridate::year(date),
